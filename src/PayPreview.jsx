@@ -1,0 +1,14 @@
+import React,{useEffect,useState} from 'react';
+import {ChevronRight,CheckCircle2,Coffee,Utensils,ShoppingBag} from 'lucide-react';
+import PayCheckout from './PayCheckout.jsx';
+import {DEMO_PRODUCTS,restoreWallet,buyDemo,cancelDemo} from './journeyModel.js';
+const money=n=>n.toLocaleString('ko-KR');
+export default function PayPreview({Dialog,onClose}){
+ const [wallet,setWallet]=useState(()=>{try{return restoreWallet(localStorage.getItem('dangdo.arrival-wallet'));}catch{return restoreWallet(null);}}),[product,setProduct]=useState(null),[quantity,setQuantity]=useState(1),[coupon,setCoupon]=useState(true),[error,setError]=useState(''),[order,setOrder]=useState(null),[request]=useState(()=>crypto.randomUUID());
+ useEffect(()=>{try{localStorage.setItem('dangdo.arrival-wallet',JSON.stringify(wallet));}catch{}},[wallet]);
+ function pay(){try{const next=buyDemo(wallet,{trip:{id:'preview-'+request,destination:{name:'결제 화면 체험',lat:0,lng:0}},productId:product.id,requestId:request,quantity,coupon});setWallet(next);setOrder(next.orders.find(o=>o.id===request));return true;}catch(e){setError(e.message);return false;}}
+ function refund(){const next=cancelDemo(wallet,order.id);setWallet(next);setOrder(next.orders.find(o=>o.id===order.id));}
+ if(order)return <Dialog title="결제 체험 결과" onClose={onClose}><div className="dialog-body"><div className="arrival-symbol"><CheckCircle2 size={36}/></div><h3>{order.status==='cancelled'?'체험 결제를 취소했어요':'카카오페이 결제 화면을 체험했어요'}</h3><span className="demo-badge">가상 상품과 잔액 사용   실제 청구 없음</span><div className="checkout-summary"><div><span>{order.product} × {order.quantity}</span><b>{money(order.total)}원</b></div><div><span>도착 할인 체험</span><b>{money(order.discount)}원</b></div><div><span>포인트 {order.status==='cancelled'?'회수':'적립'}</span><b>{money(order.reward)}P</b></div></div>{order.status==='paid'&&<button className="dd-secondary" onClick={refund}>체험 결제 취소</button>}<button className="dd-primary" onClick={onClose}>닫기</button></div></Dialog>;
+ if(product)return <PayCheckout product={product} destination="결제 화면 체험" wallet={wallet} quantity={quantity} setQuantity={setQuantity} coupon={coupon} setCoupon={setCoupon} error={error} onPay={pay} onClose={onClose} Dialog={Dialog}/>;
+ return <Dialog title="카카오페이 결제 체험" onClose={onClose}><div className="dialog-body"><span className="demo-badge">가상 상품   실제 청구 없음</span><h3>도착 할인부터 결제까지</h3><p>상품 선택, 할인 적용, 결제 확인과 취소를 체험하세요.</p><div className="preview-products">{DEMO_PRODUCTS.map(p=>{const Icon=p.kind==='coffee'?Coffee:p.kind==='meal'?Utensils:ShoppingBag;return <button className="destination-offer" key={p.id} onClick={()=>setProduct(p)}><span className={'deal-icon '+p.kind}><Icon size={25}/></span><span className="deal-description"><strong>{p.name}</strong><span className="deal-prices"><b>{money(p.price-p.discount)}원</b><del>{money(p.price)}원</del></span></span><ChevronRight size={20}/></button>})}</div></div></Dialog>;
+}
