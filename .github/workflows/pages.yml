@@ -22,6 +22,8 @@ jobs:
           ONNXRUNTIME_NODE_INSTALL_CUDA: skip
       - run: npm test
       - run: npm run build -- --base=/dangdo-mvp/
+        env:
+          VITE_KAKAO_MAP_KEY: '7479b5e4bd82d578d9f62d6aafd0abb9'
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
