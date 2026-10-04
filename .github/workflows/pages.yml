@@ -24,6 +24,7 @@ jobs:
       - run: npm run build -- --base=/dangdo-mvp/
         env:
           VITE_KAKAO_MAP_KEY: '7479b5e4bd82d578d9f62d6aafd0abb9'
+          VITE_API_BASE_URL: ${{ vars.DANGDO_API_BASE_URL }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
@@ -40,4 +41,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

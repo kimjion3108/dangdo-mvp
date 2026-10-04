@@ -5,3 +5,8 @@ dist/
 *.tar.gz
 .env
 .env.*
+
+!server/.env.example
+*.sqlite
+*.sqlite-*
+data/

@@ -1,0 +1,4 @@
+export function apiBase(){const value=import.meta.env.VITE_API_BASE_URL;return value?value.replace(/\/$/,''):location.hostname.endsWith('github.io')?'':location.origin;}
+export async function api(path,options={}){const base=apiBase();if(!base)throw new Error('로그인 서버 연결을 준비하고 있어요. 먼저 둘러볼 수 있어요.');let session;try{session=sessionStorage.getItem('dangdo.session');}catch{}const r=await fetch(base+path,{...options,headers:{'Content-Type':'application/json',...(session?{Authorization:`Bearer ${session}`} :{}),...options.headers},signal:options.signal||AbortSignal.timeout(10000)});const data=await r.json();if(!r.ok)throw new Error(data.error||'연결을 다시 확인해 주세요.');return data;}
+export function readAuthReturn(hash){const p=new URLSearchParams(hash.replace(/^#/,''));return {ticket:p.get('authTicket'),error:p.get('authError')};}
+export function clearAuthReturn(){history.replaceState(null,'',location.pathname+location.search);}
