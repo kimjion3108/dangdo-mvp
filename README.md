@@ -1,3 +1,32 @@
+# DANGDO · 실제 주변 탐색
+
+## v0.3 · GPS와 AI 식당 추천
+
+배포: https://kimjion3108.github.io/dangdo-mvp/
+
+첫 화면은 실제 지도 기반 식당 탐색입니다. 현재 위치는 사용자가 버튼을 누르고 브라우저 위치 권한을 허용할 때만 가져옵니다. GPS 좌표를 로컬 저장소에 보관하지 않으며 검색 좌표는 지도·장소 제공업체에 전송됩니다.
+
+- 기본 지도: Leaflet + OpenStreetMap. Overpass API에서 실제 음식점·카페를 검색합니다. 반경 500m / 1.5km / 3km, 지도 이동 후 재검색, 목적지 검색(Nominatim), 저장 기능을 지원합니다. 식당 목록은 공개 데이터의 지역별 등록 범위에 따라 다릅니다.
+- 카카오맵: 설정에 **JavaScript 키**를 입력하면 Kakao Maps JS SDK와 Places 검색으로 전환합니다. 카카오 개발자 콘솔에서 카카오맵 사용 설정을 확인하고 `https://kimjion3108.github.io`를 JavaScript SDK 도메인으로 등록해야 합니다. 키는 브라우저별 설정입니다. REST API 키·Admin 키를 넣으면 안 됩니다.
+- 길찾기: 실제 장소 좌표를 카카오맵 도보·자동차·대중교통 링크로 전달합니다. GPS가 없으면 선택한 검색 중심점을 출발지로 사용합니다. 카카오 T 탑승·ETA는 자동 연동하지 않습니다.
+- AI: `Xenova/paraphrase-multilingual-MiniLM-L12-v2`의 q8 모델을 Transformers.js로 Web Worker에서 실행합니다. 사용자가 실행 버튼을 누른 뒤 모델을 다운로드하며, 첫 실행은 네트워크와 기기에 따라 시간이 걸립니다. 한국어 요청과 실제 장소 이름·업종의 코사인 유사도(85%)와 거리 점수(15%)를 합산합니다. 최대 30개를 비교합니다. 생성형 리뷰·메뉴·평점은 만들지 않습니다. 혼잡도·영업 여부·가격·알레르기는 검증하지 않습니다.
+- 기존 혜택·주문·정산 시연은 설정 메뉴에 보존했습니다. 실제 식당에 가상 가격이나 결제 기능을 붙이지 않았습니다.
+
+위치 거부, 빈 검색 결과, 네트워크 오류, AI 로딩 실패/취소 상태를 제공합니다. 공개 API에는 이용량 제한과 장애 가능성이 있습니다. API 키가 없는 상태에서는 **카카오 지도 타일·카카오 장소 검색은 활성화되지 않습니다.**
+
+### 개발 및 배포
+
+```sh
+ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci
+npm run dev
+npm test
+npm run build -- --base=/dangdo-mvp/
+```
+
+AI는 브라우저 WASM을 사용하므로 Node CUDA 설치가 필요 없습니다. `.github/workflows/pages.yml`은 `main` 커밋마다 테스트·빌드 후 GitHub Pages로 배포합니다. 비밀 API 키를 정적 번들에 넣지 마세요.
+
+---
+
 # DANGDO MVP
 
 ## v0.2 · 브랜드 비용과 정산
@@ -62,3 +91,4 @@ http://127.0.0.1:5173 에서 실행됩니다. `npm run build`는 배포용 `dist
 - `tests/payment.test.js`: 결제·중복 승인·자격·성과 분리·복원 검증
 
 프로젝트 `sources/`와 동기화 파일은 수정하지 않았습니다.
+
