@@ -17,5 +17,5 @@ export function humanEta({origin,destination,mode='taxi',departureTime=Date.now(
  if(mode==='bike'){route={options:bikeRoutes(base),...bikeRoutes(base).find(r=>r.type===(context.bikeRoute||'FAST'))};total=route.minutes;}
  if(mode==='walk')route={distanceKm:distance(origin,destination)*1.35/1000,speedKmh:4.5,source:'거리·보행 속도 기반 추정'};
  const arrival=departureTime+total*60000;
- return {mode:mode.toUpperCase(),transportMode:mode,origin,destination,departureTime,etaMinutes:Math.max(0,total-(context.elapsed||0)),initialMinutes:total,estimatedArrivalTime:arrival,humanArrivalETA:arrival,confidence:'추정',route,context,events:[],source:demo?'Demo mobility data':route.source};
+ return {isDemo:demo,mode:mode.toUpperCase(),transportMode:mode,origin,destination,departureTime,etaMinutes:Math.max(0,total-(context.elapsed||0)),initialMinutes:total,estimatedArrivalTime:arrival,humanArrivalETA:arrival,confidence:'추정',route,context,events:[],source:demo?'Demo mobility data':route.source};
 }
