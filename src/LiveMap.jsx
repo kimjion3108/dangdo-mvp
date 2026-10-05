@@ -2,9 +2,9 @@ import React,{useEffect,useRef} from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {loadKakao} from './places.js';
-export default function LiveMap({center,places,selected,onSelect,onMove,gps,kakaoKey,onError}){
+export default function LiveMap({center,places,selected,onSelect,onMove,gps,destination,kakaoKey,onError}){
  const host=useRef(null),map=useRef(null),layers=useRef([]),type=useRef(''),latest=useRef({onSelect,onMove,onError});
- latest.current={onSelect,onMove,onError,places,selected,gps};
+ latest.current={onSelect,onMove,onError,places,selected,gps,destination};
  useEffect(()=>{
   let dead=false,observer;
   async function init(){try{
@@ -15,15 +15,16 @@ export default function LiveMap({center,places,selected,onSelect,onMove,gps,kaka
   init();
   return()=>{dead=true;observer?.disconnect();layers.current.forEach(x=>type.current==='osm'?x.remove():x.setMap(null));layers.current=[];if(type.current==='osm')map.current?.remove();map.current=null;host.current?.replaceChildren();};
  },[kakaoKey]);
- function draw(){const {places,selected,gps}=latest.current;if(!map.current)return;layers.current.forEach(x=>type.current==='osm'?x.remove():x.setMap(null));layers.current=[];
+ function draw(){const {places,selected,gps,destination}=latest.current;if(!map.current)return;layers.current.forEach(x=>type.current==='osm'?x.remove():x.setMap(null));layers.current=[];
   const add=(p,i)=>{const button=document.createElement('button');button.className=`place-pin ${selected?.id===p.id?'selected':''}`;button.textContent=String(i+1);button.setAttribute('aria-label',p.name);button.onclick=()=>latest.current.onSelect(p);
    if(type.current==='osm'){const marker=L.marker([p.lat,p.lng],{icon:L.divIcon({html:button,className:'pin-wrapper',iconSize:[36,42],iconAnchor:[18,42]})}).addTo(map.current);layers.current.push(marker);}
    else{const k=window.kakao;layers.current.push(new k.maps.CustomOverlay({map:map.current,position:new k.maps.LatLng(p.lat,p.lng),content:button,yAnchor:1}));}
   };places.slice(0,30).forEach(add);if(selected&&!places.slice(0,30).some(p=>p.id===selected.id))add(selected,Math.max(0,places.findIndex(p=>p.id===selected.id)));
+  if(destination){const label=document.createElement('span');label.className='destination-pin';label.textContent=destination.name;label.setAttribute('aria-label','목적지 '+destination.name);if(type.current==='osm'){layers.current.push(L.marker([destination.lat,destination.lng],{icon:L.divIcon({html:label,className:'pin-wrapper',iconSize:[80,30],iconAnchor:[40,30]})}).addTo(map.current));}else{layers.current.push(new window.kakao.maps.CustomOverlay({map:map.current,position:new window.kakao.maps.LatLng(destination.lat,destination.lng),content:label,yAnchor:1}));}}
   if(gps){if(type.current==='osm'){layers.current.push(L.circleMarker([gps.lat,gps.lng],{radius:8,color:'#fff',weight:3,fillColor:'#287af5',fillOpacity:1}).addTo(map.current));layers.current.push(L.circle([gps.lat,gps.lng],{radius:Math.min(gps.accuracy||20,500),color:'#287af5',weight:1,fillOpacity:.08}).addTo(map.current));}else{const k=window.kakao;layers.current.push(new k.maps.Circle({map:map.current,center:new k.maps.LatLng(gps.lat,gps.lng),radius:12,strokeWeight:3,strokeColor:'#ffffff',fillColor:'#287af5',fillOpacity:1}));}}
  }
  useEffect(()=>{if(!map.current)return;if(type.current==='osm')map.current.setView([center.lat,center.lng],15);else map.current.setCenter(new window.kakao.maps.LatLng(center.lat,center.lng));},[center]);
- useEffect(draw,[places,selected,gps]);
+ useEffect(draw,[places,selected,gps,destination]);
  useEffect(()=>{if(!selected||!map.current)return;if(type.current==='osm')map.current.panTo([selected.lat,selected.lng]);else map.current.panTo(new window.kakao.maps.LatLng(selected.lat,selected.lng));},[selected]);
- return <div ref={host} className="live-map" aria-label="주변 식당 지도"/>;
+ return <div ref={host} className="live-map" aria-label="이동과 추천 지도"/>;
 }
