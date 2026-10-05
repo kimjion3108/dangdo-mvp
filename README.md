@@ -19,7 +19,7 @@
 
 카카오 로그인은 별도 Node 서버가 실제 설정된 경우에만 선택할 수 있습니다. GitHub Pages 자체는 인증 서버를 실행하지 않습니다. 설정 방법은 [AUTH_AND_MOBILITY.md](AUTH_AND_MOBILITY.md)를 참고하세요.
 
-pay 영역은 카카오페이 공식 서비스로 이동합니다. 당도 내 실제 결제 승인은 연결되지 않았습니다. [PAYMENTS.md](PAYMENTS.md)
+pay 버튼은 당도 안의 결제 페이지를 엽니다. 지점, 주문 내용, 금액과 카카오페이 결제수단을 표시하며 실제 승인 연결 전에는 결제 버튼이 비활성화됩니다. 설정에서 지점별 사은품을 등록하면 그 지점의 목록·상세·결제 페이지에 표시됩니다. [PAYMENTS.md](PAYMENTS.md)
 
 카카오톡 공유는 사용자가 수신자를 선택하는 공식 JavaScript SDK 기능입니다. 자동 알림톡이나 임의 친구 메시지 발송과는 별도입니다. [KAKAO_MESSAGES.md](KAKAO_MESSAGES.md)
 
