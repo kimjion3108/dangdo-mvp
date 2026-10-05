@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {destinationShare,sendDestination} from '../src/destinationShare.js';
+import {destinationFromURL} from '../src/journeyModel.js';
+test('recipient opens exact destination without sharing profile or session',()=>{const p={name:'성수역',lat:37.5446,lng:127.0559};const t=destinationShare('https://example.com/dangdo/?private=value#session',p);assert.deepEqual(destinationFromURL(t.link.webUrl),p);assert.equal(t.link.mobileWebUrl,t.link.webUrl);assert.ok(!t.link.webUrl.includes('private'));assert.ok(!t.link.webUrl.includes('session'));assert.throws(()=>destinationShare('https://example.com',{...p,lat:Infinity}));});
+test('Kakao opens share chooser; unavailable SDK falls back to link',async()=>{const t=destinationShare('https://example.com/');let sent;assert.equal(await sendDestination(t,{isInitialized:()=>true,Share:{sendDefault:x=>{sent=x;}}},{}),'kakao');assert.equal(sent,t);let copied;assert.equal(await sendDestination(t,null,{clipboard:{writeText:async x=>{copied=x;}}}),'copied');assert.equal(copied,t.link.webUrl);await assert.rejects(sendDestination(t,null,{share:async()=>{throw new DOMException('cancelled','AbortError');}}),{name:'AbortError'});});
