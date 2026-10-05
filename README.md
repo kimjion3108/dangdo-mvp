@@ -94,3 +94,25 @@ For transit: reset scenario → Transit → buy → Demo → missed train. Catch
 For bike: reset scenario → Bike FAST → buy → SAFE. 18:52→18:56 crosses coffee's 18:55 deal cutoff; recommendations, preparation and dispatch recalculate. Safety data are explicitly DEMO. No live signal claim.
 
 `npm test` includes normalized ETA, catchable train, missed-train propagation, FAST/SAFE deal and robot changes, traffic release/reassignment, HOLD, started-prep preservation and non-overlapping robot reservations. Mobile browser QA uses 390×844 with GPS granted/denied and network fixtures; fixture tests do not prove a live external provider. Production map/share initialization is checked separately after Pages deployment.
+
+### ORBIT segment safety routing
+
+Bike candidates now consist of actual distinct DEMO polylines split into segments. Each segment stores distance, travelTime, bikeLane coverage, detected accident risk, intersections, arterial risk and crossings. Hazard passage is computed by point-to-segment distance (30 m Demo zones); the same hazard markers remain on the map after switching routes. SAFE does not hide dangerous points: its path avoids B/C/D while A remains unavoidable in this graph.
+
+Route risk is the sum of hazard severity × 4, intersection count × 3, no-bike-lane distance share × 20, distance-weighted arterial risk × 20, and crossings × 1.5, capped at 100. Segment penalties and route components are retained for inspection. This is a local illustrative model, not calibrated accident probability. DEMO road attributes and graph coordinates must not be used as real navigation.
+
+FAST minimizes `Time + 0.2 × RoutingRisk`; BALANCED minimizes `Time + 0.8 × RoutingRisk`; SAFE minimizes `Time + 2.0 × RoutingRisk`. Time is minutes. **RoutingRisk = displayed 0–100 Risk Score / 10**, so the optimization uses 0–10 risk units. UI explains this normalization. Without it, the old 29 min / Risk 62 versus 33 min / Risk 24 numbers would make even FAST choose the latter. Every profile evaluates all candidates and may legitimately pick the same path; no route winner is forced by its label.
+
+The fixed 18:23 demo yields:
+
+| Profile | Time | ETA | Risk Score | Hotspots | Bike lanes |
+|---|---:|---|---:|---:|---:|
+| FAST | 29 min | 18:52 | 62 | 4 | 43% |
+| BALANCED | 31 min | 18:54 | 35 | 1 | 62% |
+| SAFE | 33 min | 18:56 | 24 | 1 | 78% |
+
+FAST → SAFE: +4 min, score −38 (61%), 3 hazard zones avoided, 5 fewer risk intersections, 2 fewer major-road crossings. Additional bike-lane distance is calculated from the actual Demo segment lengths, not a fixed 2.1 km claim.
+
+`More safe route` previews the actual different polyline without changing the trip/order. `Select safe route` commits ETA 18:52→18:56, removes Move Coffee's 18:55 Arrival Deal, reranks merchants, reschedules preparation and robot dispatch. A comparison toggle draws both polylines; green indicates Demo bike-lane segments and gray hazard markers indicate avoided zones. The reasons panel explains why the recommendation changed. Debug panel labels bike routes, accident hotspots and bike lanes DEMO, safety score DANGDO/ORBIT model and signals unconnected.
+
+Routing tests also modify hazard positions/severity and verify the selected SAFE path changes, and verify all zero risk penalties select the fastest path. No risk-reduction or public-data/API claims are inferred from these simulations.
