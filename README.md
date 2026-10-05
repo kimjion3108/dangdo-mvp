@@ -77,7 +77,7 @@ The existing white/yellow UI, real place search, GPS/map, merchant cards, checko
 | Kakao sharing / map links | Official Kakao Share SDK chooser; Web Share / clipboard fallback, exact map destination |
 | Taxi/car route | Distance estimate; demo traffic delay. No live road routing |
 | Transit journey / subway arrivals | Demo transit data. Existing server public-data adapter retained but no deployed public key/backend connected |
-| Bike FAST/SAFE, risk, road share, hotspots, nearby bikes | DEMO; illustrative factors, not actual navigation, T Bike inventory or live safety guidance |
+| Bike routes / risk | Official route proxy implemented; deployment requires backend. Accident export required for baseline risk/SAFE. No invented lane ratio or nearby bikes |
 | Walking | Straight-line distance × route factor / assumed 4.5 km/h; no real walking route |
 | Merchant inventory/wait/deals/capacity/rewards | Demo Merchant State |
 | Preparation / robot fleet / dispatch / arrival gap | Local deterministic simulation, no merchant or physical robot API |
@@ -91,28 +91,35 @@ Settings → Arrival Commerce Demo → Seongsu scenario resets virtual clock to 
 
 For transit: reset scenario → Transit → buy → Demo → missed train. Catchable 7-minute train becomes 15-minute train; arrival 18:51→18:59, preparation rescheduled, robot reassigned. Boarding advances virtual clock while preserving ETA.
 
-For bike: reset scenario → Bike FAST → buy → SAFE. 18:52→18:56 crosses coffee's 18:55 deal cutoff; recommendations, preparation and dispatch recalculate. Safety data are explicitly DEMO. No live signal claim.
+For bike: connect the routing backend and covered public accident data first. Select FAST → SAFE; the actual selected duration propagates through recommendations, preparation and dispatch. There is no fixed production 18:52/18:56 bike scenario.
 
 `npm test` includes normalized ETA, catchable train, missed-train propagation, FAST/SAFE deal and robot changes, traffic release/reassignment, HOLD, started-prep preservation and non-overlapping robot reservations. Mobile browser QA uses 390×844 with GPS granted/denied and network fixtures; fixture tests do not prove a live external provider. Production map/share initialization is checked separately after Pages deployment.
 
-### ORBIT segment safety routing
+### ORBIT official-route integration (2026-10-05)
 
-Bike candidates now consist of actual distinct DEMO polylines split into segments. Each segment stores distance, travelTime, bikeLane coverage, detected accident risk, intersections, arterial risk and crossings. Hazard passage is computed by point-to-segment distance (30 m Demo zones); the same hazard markers remain on the map after switching routes. SAFE does not hide dangerous points: its path avoids B/C/D while A remains unavoidable in this graph.
+The old illustrative offset routes, invented lane percentages, green lane strokes, and preset risk numbers have been removed. The connected `kimjion3108/orbit-bike` repository was inspected: main contains only `.gitattributes`, and no other branch/source is available. This update does **not** claim to reuse missing ORBIT navigation source.
 
-Route risk is the sum of hazard severity × 4, intersection count × 3, no-bike-lane distance share × 20, distance-weighted arterial risk × 20, and crossings × 1.5, capped at 100. Segment penalties and route components are retained for inspection. This is a local illustrative model, not calibrated accident probability. DEMO road attributes and graph coordinates must not be used as real navigation.
+- `server/bicycle.js`: GET `/api/routing/bicycle`, official `https://dapi.kakao.com/v2/routing/bicycle`, validated coordinates and SHORTEST / ACCESSIBLE / BIKE_ONLY options, server-only REST key, timeout, bounded five-minute cache. No private API.
+- `src/orbit/routeProvider.js`: preserves official `legs[].steps[].path.points` geometry, duration, distance and guidance. Only trusted Kakao landing URLs are accepted.
+- `src/orbit/geometry.js`: <=100 m analysis segments preserving raw bends, polygon/hole overlap lengths and near distances. Display uses source geometry; no generated shortcut lines.
+- `featureExtractor.js`, `riskModel.js`, `riskInference.js`, `modelMetadata.js`: separate feature extraction and **ORBIT Risk Baseline 1.0**. This is a transparent exposure index, not a trained AI model or accident probability. No unavailable intersection, road-share or signal inputs are invented.
+- `src/mobility/orbitRouting.js`: official candidates → segmentation → feature extraction → inference → scoring → selected candidate. FAST shows official SHORTEST; BALANCED shows official ACCESSIBLE; SAFE minimizes minutes + 2.0 × displayed risk across all returned candidates. Costs for FAST/BALANCED use 0.2/0.8 for inspection; their official route modes remain fixed as requested. No hidden divide-by-ten. Identical geometry is explicitly reported; route differences are never forced.
+- `OrbitSafety.jsx`: concise Korean cards, true path comparison, avoided hotspot count/overlap distance, ETA change, official step guidance and Kakao Maps handoff. Safe selection drives the existing recommendation, preparation and robot pipeline.
+- Payment: product → KakaoPay method → required no-charge consent → amount/arrival confirmation sheet → local order → Arrival Sync. Cancel/close creates no order. This is a DANGDO MVP flow, **not a KakaoPay authorization screen or charge**.
+- Black bottom toast replaced by inline feedback. Browser history follows screen transitions; first Home back asks again, second follows browser history. No `window.close`.
 
-FAST minimizes `Time + 0.2 × RoutingRisk`; BALANCED minimizes `Time + 0.8 × RoutingRisk`; SAFE minimizes `Time + 2.0 × RoutingRisk`. Time is minutes. **RoutingRisk = displayed 0–100 Risk Score / 10**, so the optimization uses 0–10 risk units. UI explains this normalization. Without it, the old 29 min / Risk 62 versus 33 min / Risk 24 numbers would make even FAST choose the latter. Every profile evaluates all candidates and may legitimately pick the same path; no route winner is forced by its label.
+#### Activation and accurate data status
 
-The fixed 18:23 demo yields:
+GitHub Pages hosts the frontend only. Set the deployed backend's `KAKAO_REST_API_KEY`; set repository variable `DANGDO_API_BASE_URL` to that backend. Do not put REST keys in VITE variables or localStorage. The backend CORS origin must match `FRONTEND_URL`.
 
-| Profile | Time | ETA | Risk Score | Hotspots | Bike lanes |
-|---|---:|---|---:|---:|---:|
-| FAST | 29 min | 18:52 | 62 | 4 | 43% |
-| BALANCED | 31 min | 18:54 | 35 | 1 | 62% |
-| SAFE | 33 min | 18:56 | 24 | 1 | 78% |
+No live backend credentials or public accident dataset were available in this workspace. Consequently deployed Bike mode may show **route connection required**. It must not show a simulated live path. If routing works but accident data do not, FAST/BALANCED remain available and SAFE/risk values are omitted. A successful empty hotspot result is accepted only when the server certifies geographic coverage.
 
-FAST → SAFE: +4 min, score −38 (61%), 3 hazard zones avoided, 5 fewer risk intersections, 2 fewer major-road crossings. Additional bike-lane distance is calculated from the actual Demo segment lengths, not a fixed 2.1 km claim.
+`ORBIT_HOTSPOTS_FILE` accepts a lawful KoROAD GeoJSON export normalized with `scripts/import_orbit_hotspots.py`. Metadata must include source URL/year and verified coverageBounds; each feature must be a Polygon/MultiPolygon. Features preserve occurrence/casualty/fatality/serious-injury counts. The file is loaded once and filtered by a route-envelope request, not requested for each route coordinate. **A direct KoROAD API downloader is not connected.** Accident polygons, actual bike-lane geometry, public signals and T Bike availability are not live on the deployed app.
 
-`More safe route` previews the actual different polyline without changing the trip/order. `Select safe route` commits ETA 18:52→18:56, removes Move Coffee's 18:55 Arrival Deal, reranks merchants, reschedules preparation and robot dispatch. A comparison toggle draws both polylines; green indicates Demo bike-lane segments and gray hazard markers indicate avoided zones. The reasons panel explains why the recommendation changed. Debug panel labels bike routes, accident hotspots and bike lanes DEMO, safety score DANGDO/ORBIT model and signals unconnected.
+`train_orbit_risk_model.py` is an optional offline training pipeline: >=200 sourced samples, >=5 geographic areas, grouped holdout, weak exposure labels, logistic regression and exported model metadata/validation. No actual training dataset was available; no trained artifact or accuracy claim is shipped. The production UI uses baseline-1.0 only; a trained model would require separate validation and inference deployment.
 
-Routing tests also modify hazard positions/severity and verify the selected SAFE path changes, and verify all zero risk penalties select the fastest path. No risk-reduction or public-data/API claims are inferred from these simulations.
+Official documentation: https://developers.kakao.com/docs/ko/kakaomap/rest-api and https://www.data.go.kr/data/15056681/openapi.do.
+
+#### Verification scope
+
+Node tests exercise documented response fixtures, exact geometry preservation, polygon exposure/hole handling, safe candidate selection, identical routes, unavailable providers, server-only authorization/cache, ETA/deal/preparation/robot propagation and prior app behavior. Browser fixtures are test-only, not production demo data. These checks do **not** prove real KAIST → Expo Science Park API access. Real route times, risk scores, avoided hotspot counts and lane percentages cannot be reported until the server and public dataset are connected.

@@ -1,0 +1,1 @@
+export const modelMetadata=Object.freeze({name:'ORBIT Risk Baseline',version:'baseline-1.0',trained:false,source:'공개 사고다발구간 폴리곤 노출도',features:['overlapMeters','nearestHotspotMeters','accidentCount','casualties','fatalities','seriousInjuries'],limitation:'자체 경로 비교 지표이며 사고 발생 확률이 아닙니다. 학습 모델과 검증 정확도는 제공하지 않습니다.'});

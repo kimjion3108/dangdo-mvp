@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {bicycleService} from './bicycle.js';
 import {randomBytes,createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {readFile,mkdir} from 'node:fs/promises';
@@ -11,6 +12,7 @@ export function createApp({env=process.env,fetcher=fetch,db=new DatabaseSync(env
  const frontend=env.FRONTEND_URL||'http://localhost:5173/',origin=new URL(frontend).origin;
  const callback=env.KAKAO_REDIRECT_URI,ready=!!(env.KAKAO_REST_API_KEY&&env.KAKAO_CLIENT_SECRET&&callback);
  db.exec('CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY,user TEXT NOT NULL,expires INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS oauth (state TEXT PRIMARY KEY,expires INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS tickets (hash TEXT PRIMARY KEY,user TEXT NOT NULL,expires INTEGER NOT NULL)');
+ const bicycle=bicycleService({env,fetcher});
  const cache=new Map();let cityAreas=[];try{cityAreas=JSON.parse(env.SEOUL_CITY_AREAS_JSON||'[]');if(!Array.isArray(cityAreas))cityAreas=[];}catch{}
  const send=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
  const redirect=(res,url)=>{res.writeHead(302,{Location:url,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();};
@@ -23,6 +25,7 @@ export function createApp({env=process.env,fetcher=fetch,db=new DatabaseSync(env
   if(req.headers.origin===origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');}
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
   if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
+  if(['/api/routing/bicycle','/api/orbit/hotspots'].includes(u.pathname)){if(req.method!=='GET')return send(res,405,{error:'Method not allowed'});try{return send(res,200,await (u.pathname.endsWith('bicycle')?bicycle.route(u.searchParams):bicycle.hotspots(u.searchParams)));}catch(e){return send(res,e.status||503,{error:e.status?e.message:'경로 데이터를 처리하지 못했어요.'});}}
   if(u.pathname==='/api/config')return send(res,200,{login:ready,subway:!!env.SEOUL_SUBWAY_KEY,crowd:!!env.SEOUL_CITY_KEY});
   if(u.pathname==='/api/auth/start'&&req.method==='GET'){
    if(!ready)return send(res,503,{error:'로그인 서버 설정이 아직 완료되지 않았어요.'});

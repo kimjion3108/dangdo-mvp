@@ -1,0 +1,2 @@
+import {baselineRisk} from './riskModel.js';
+export function inferRoute(route,segments){const distance=segments.reduce((s,x)=>s+x.distance,0);const hotspotIds=[...new Set(segments.flatMap(s=>s.hotspotIds))];return {...route,segments,risk:Math.round(segments.reduce((n,s)=>n+baselineRisk(s)*s.distance,0)/Math.max(1,distance)*10)/10,hotspotIds,hotspots:hotspotIds.length,overlapMeters:Math.round(segments.reduce((n,s)=>n+s.overlapMeters,0)),bikeRoadShare:null};}
