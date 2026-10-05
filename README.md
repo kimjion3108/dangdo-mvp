@@ -59,3 +59,38 @@ npm run build -- --base=/dangdo-mvp/
 단위 테스트는 ETA·시간대·할인·상태 변경·품절·마감·추천 순위·기존 공유/인증/정산을 검증합니다. 390×844 브라우저 검증 항목: GPS 허용/거부, 출발/목적지 검색, 이동수단, ETA/출발, 추천 이유, 상태/ETA 재추천, 할인/상세/확인/완료, 공유, 주문 취소, 뒤로가기, 새로고침, 가로 overflow, runtime error.
 
 실시간 차량/지하철 ETA, 가맹점 상태 API, 서버 주문, 카카오페이 실결제, 실제 로그인, 자동 카카오톡 알림은 구현되지 않았습니다. 과거 공공 API 서버 코드는 현재 화면에 연결되어 있지 않습니다. 당도는 카카오 공식 앱이 아닌 독립 프로젝트입니다.
+
+## Multi-Modal Arrival Commerce (October 2026)
+
+The existing white/yellow UI, real place search, GPS/map, merchant cards, checkout and share flow are retained. Entry now follows Welcome → GPS/manual origin → destination → transport comparison → Journey → purchase → Arrival Sync.
+
+`mobility/mobilityEngine.js` normalizes five modes into `humanArrivalETA` / `estimatedArrivalTime`. Taxi/car and walking are distance estimates; transit selects an attainable train using walk-to-station + boarding buffer; Bike Intelligence compares FAST/SAFE route factors. Original ORBIT source/data was not present in this repository: its specified concepts have been implemented here, not represented as an imported production system.
+
+`arrivalEngine.js` weights arrival-window fit above distance/reviews. `arrival/preparationScheduler.js` delays preparation until needed and preserves preparation already started. `physical/robotDispatchEngine.js` scores arrival gap, robot travel, battery, availability/current-job windows and overlapping reservations. It releases/reassigns a reservation when necessary, keeps an already dispatched robot, and exposes an unsynchronized gap or unavailable robot rather than fabricating synchronization. Paid demo order prices remain fixed after ETA updates.
+
+### Sources and limits
+
+| Feature | Source / deployed status |
+|---|---|
+| GPS | Browser Geolocation after permission; manual search when refused |
+| Map / destination search | Kakao JS Maps/Places when build key works; OSM/Nominatim fallback |
+| Kakao sharing / map links | Official Kakao Share SDK chooser; Web Share / clipboard fallback, exact map destination |
+| Taxi/car route | Distance estimate; demo traffic delay. No live road routing |
+| Transit journey / subway arrivals | Demo transit data. Existing server public-data adapter retained but no deployed public key/backend connected |
+| Bike FAST/SAFE, risk, road share, hotspots, nearby bikes | DEMO; illustrative factors, not actual navigation, T Bike inventory or live safety guidance |
+| Walking | Straight-line distance × route factor / assumed 4.5 km/h; no real walking route |
+| Merchant inventory/wait/deals/capacity/rewards | Demo Merchant State |
+| Preparation / robot fleet / dispatch / arrival gap | Local deterministic simulation, no merchant or physical robot API |
+| Payment | Explicit consent-gated MVP checkout; no charge or merchant submission |
+
+No public-data feed is connected in the deployed Pages frontend. Official integration references checked: [Kakao Mobility public automobile directions](https://developers.kakaomobility.com/guide/navi-api/start.html), [Seoul subway arrivals](https://data.seoul.go.kr/dataList/OA-12764/A/1/datasetView.do), [KoROAD bicycle accident hotspots](https://www.data.go.kr/data/15056681/openapi.do). They require appropriate server configuration/access; browser JS key is not a REST key. No private APIs/crawling are used.
+
+### Hero demos
+
+Settings → Arrival Commerce Demo → Seongsu scenario resets virtual clock to 18:23. Compare transport, start, purchase Move Coffee with explicit MVP consent. Arrival Sync shows R1 / 18:47. Open Demo → traffic +11: arrival 18:58, coffee deal expires, prep is delayed, R1 released and R2 reserved, arrival gap 0. Return to Journey to see reranked merchants.
+
+For transit: reset scenario → Transit → buy → Demo → missed train. Catchable 7-minute train becomes 15-minute train; arrival 18:51→18:59, preparation rescheduled, robot reassigned. Boarding advances virtual clock while preserving ETA.
+
+For bike: reset scenario → Bike FAST → buy → SAFE. 18:52→18:56 crosses coffee's 18:55 deal cutoff; recommendations, preparation and dispatch recalculate. Safety data are explicitly DEMO. No live signal claim.
+
+`npm test` includes normalized ETA, catchable train, missed-train propagation, FAST/SAFE deal and robot changes, traffic release/reassignment, HOLD, started-prep preservation and non-overlapping robot reservations. Mobile browser QA uses 390×844 with GPS granted/denied and network fixtures; fixture tests do not prove a live external provider. Production map/share initialization is checked separately after Pages deployment.
