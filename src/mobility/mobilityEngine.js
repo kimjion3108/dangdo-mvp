@@ -2,9 +2,10 @@ import {estimateEta} from '../arrivalEngine.js';
 import {distance} from '../places.js';
 export const defaultContext=()=>({trafficDelay:0,missedTrains:0,bikeRoute:'FAST',elapsed:0,boarded:false});
 export function transitRoute(context={},demo=false,base=25){
- const walk=3,buffer=1,arrivals=[2,7,15,23,31,39,47,55,63,71,79,87,95,103,111,119,127,135,143,151];
+ const walk=3,buffer=1,arrivals=[2,...Array.from({length:200},(_,i)=>7+i*8)];
  const eligible=arrivals.filter(n=>n>=walk+buffer);
- const train=eligible[Math.min(context.missedTrains||0,eligible.length-1)];
+ const reachableIndex=context.boarded?0:Math.max(0,eligible.findIndex(n=>n>=(context.elapsed||0)+walk+buffer));
+ const train=eligible[Math.min(Math.max(context.missedTrains||0,reachableIndex),eligible.length-1)];
  return {walkToStation:walk,boardingBuffer:buffer,arrivals,nextTrain:train,ride:demo?18:Math.max(4,base-13),finalWalk:3,total:train+(demo?18:Math.max(4,base-13))+3,boarded:!!context.boarded,source:'Demo transit data'};
 }
 export function bikeRoutes(base=29){return [{type:'FAST',minutes:base,risk:67,bikeRoadShare:.35,hotspots:3,intersections:8},{type:'SAFE',minutes:base+4,risk:21,bikeRoadShare:.85,hotspots:0,intersections:3}].map(r=>({...r,components:{distanceScore:Math.max(0,20-r.minutes/3),bikeRoadScore:r.bikeRoadShare*40,accidentRiskScore:-r.hotspots*8,intersectionRiskScore:-r.intersections*2,signalScore:0},score:Math.round(Math.max(0,20-r.minutes/3)+r.bikeRoadShare*40-r.hotspots*8-r.intersections*2),source:'Demo bike route / risk'}));}
