@@ -1,6 +1,7 @@
+import {koroadService} from './koroad.js';
 import {readFile} from 'node:fs/promises';
 const modes=new Set(['BIKE_ONLY','SHORTEST','ACCESSIBLE']);
-export function bicycleService({env,fetcher=fetch}){const cache=new Map();let publicData;
+export function bicycleService({env,fetcher=fetch}){const cache=new Map();const liveAccidents=koroadService({env,fetcher});let publicData;
  const error=(status,message)=>Object.assign(new Error(message),{status});
  return {async route(params){
   if(!env.KAKAO_REST_API_KEY)throw error(503,'자전거 경로 서버 설정이 아직 완료되지 않았어요.');
@@ -13,8 +14,9 @@ export function bicycleService({env,fetcher=fetch}){const cache=new Map();let pu
   // Return only documented routing payload, never upstream headers or error bodies.
   const result={status:data.status,route:data.route};if(cache.size>=100)cache.delete(cache.keys().next().value);cache.set(key,{time:Date.now(),data:result});return result;
  },async hotspots(params){
-  if(!env.ORBIT_HOTSPOTS_FILE)throw error(503,'공개 사고다발구간 데이터가 아직 연결되지 않았어요.');
+
   const bbox=(params.get('bbox')||'').split(',').map(Number);if(bbox.length!==4||bbox.some(n=>!Number.isFinite(n))||bbox[0]>=bbox[2]||bbox[1]>=bbox[3]||bbox[2]-bbox[0]>2||bbox[3]-bbox[1]>2)throw error(400,'조회 영역을 확인해 주세요.');
+  if(!env.ORBIT_HOTSPOTS_FILE){try{return await liveAccidents(bbox);}catch(e){throw error(503,e.message);}}
   try{if(!publicData)publicData=JSON.parse(await readFile(env.ORBIT_HOTSPOTS_FILE,'utf8'));}catch{throw error(503,'사고 데이터를 읽지 못했어요.');}
   const c=publicData.coverageBounds;if(publicData.type!=='FeatureCollection'||!Array.isArray(publicData.features)||!publicData.source?.url||!publicData.source?.year||!Array.isArray(c)||bbox[0]<c[0]||bbox[1]<c[1]||bbox[2]>c[2]||bbox[3]>c[3])throw error(503,'이 지역의 사고 데이터 범위를 확인하지 못했어요.');
   if(publicData.features.some(f=>!['Polygon','MultiPolygon'].includes(f.geometry?.type)||!Array.isArray(f.geometry.coordinates)||f.id===undefined))throw error(503,'사고 데이터 형식을 확인해 주세요.');

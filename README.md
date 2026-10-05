@@ -123,3 +123,9 @@ Official documentation: https://developers.kakao.com/docs/ko/kakaomap/rest-api a
 #### Verification scope
 
 Node tests exercise documented response fixtures, exact geometry preservation, polygon exposure/hole handling, safe candidate selection, identical routes, unavailable providers, server-only authorization/cache, ETA/deal/preparation/robot propagation and prior app behavior. Browser fixtures are test-only, not production demo data. These checks do **not** prove real KAIST → Expo Science Park API access. Real route times, risk scores, avoided hotspot counts and lane percentages cannot be reported until the server and public dataset are connected.
+
+### Uploaded ORBIT source now integrated
+
+The subsequently supplied `orbit-bike.zip` resolves the missing-source blocker. See [source integration and limits](docs/orbit-source-integration.md). DANGDO now uses the original Valhalla/OSM bicycle engine directly from Pages, ports polyline decoding and GPS guidance/rerouting, imports the original nearby-road inventory semantics, and adds detected accident polygons to a genuine routing avoidance request. Original secrets and SQLite chat data are excluded from commits. The Kakao route proxy is retained for an optional backend but is not mislabeled as the active ORBIT route provider.
+
+Actual public accident requests currently fail; SAFE risk analysis is unavailable until that data connection is repaired. Real routing works independently and FAST/friendly directions remain available. No trained AI or accident-probability claim is introduced. Payment confirmation/cancel/completion remains the consent-gated local MVP flow.
