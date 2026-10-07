@@ -1,13 +1,3 @@
-# DANGDO
-
-**DANGDO는 현실에서 움직이는 두 주체의 마지막 접점을 실시간으로 다시 정한다.**
-
-2026-10-07: 메인 데모를 Dynamic Pickup으로 확장했습니다. 택시의 승차 지점과 로봇의 전달 지점은 같은 접점 엔진으로 계산하고, 충전은 같은 원리로 모듈을 차량 위치에 보냅니다. 도착 상점 추천과 주문은 이 이동 과정의 목적지·ETA를 이어받습니다. 기존 GPS·검색·지도·이동수단·ORBIT·주문·공유는 유지했습니다.
-
-[새 흐름, 엔진, 데이터 출처, 공식 API 확인 및 검증](docs/dynamic-contact.md)
-
-아래는 기존 기능 기록입니다. 최신 메인 흐름과 데이터 범위는 위 문서를 우선합니다.
-
 # DANGDO · 당도
 
 **Destination × ETA × Merchant State → Recommendation → Purchase**
@@ -139,3 +129,8 @@ Node tests exercise documented response fixtures, exact geometry preservation, p
 The subsequently supplied `orbit-bike.zip` resolves the missing-source blocker. See [source integration and limits](docs/orbit-source-integration.md). DANGDO now uses the original Valhalla/OSM bicycle engine directly from Pages, ports polyline decoding and GPS guidance/rerouting, imports the original nearby-road inventory semantics, and adds detected accident polygons to a genuine routing avoidance request. Original secrets and SQLite chat data are excluded from commits. The Kakao route proxy is retained for an optional backend but is not mislabeled as the active ORBIT route provider.
 
 Actual public accident requests currently fail; SAFE risk analysis is unavailable until that data connection is repaired. Real routing works independently and FAST/friendly directions remain available. No trained AI or accident-probability claim is introduced. Payment confirmation/cancel/completion remains the consent-gated local MVP flow.
+
+
+
+## Active Charging
+기존 시작화면과 이동·상점·주문 흐름을 유지합니다. 설정 → 자동충전에서 주차 위치 확인, 모듈 배정, 통로 이동, 정렬, 충전 완료와 여러 차량 출차 우선순위를 시연합니다. 실내 위치와 충전장치는 시뮬레이션이며 실제 BLE·주차 관제와 연결되지 않습니다. 계산은 `src/charging/chargingScheduler.js`, 데이터는 `parkingData.js`로 분리했습니다.

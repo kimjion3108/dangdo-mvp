@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parkingFixture} from '../src/charging/parkingData.js';
+import {scheduleCharging,chargingRoute,chargingState,chargingMetrics} from '../src/charging/chargingScheduler.js';
+test('charging dispatch prioritizes departure and never double books modules',()=>{const jobs=scheduleCharging(parkingFixture.vehicles,parkingFixture.modules);assert.equal(jobs[0].id,'차량 B');for(const job of jobs){assert.ok(job.energyKwh>0);assert.ok(job.startAt>=job.assignedAt);assert.equal(chargingState(job,job.completeAt),'충전 완료');for(const other of jobs.filter(x=>x.moduleId===job.moduleId&&x!==job)){assert.ok(job.completeAt<=other.assignedAt||other.completeAt<=job.assignedAt);}}});
+test('charging paths follow aisles and operational figures derive from jobs',()=>{const route=chargingRoute(parkingFixture.modules[0],parkingFixture.vehicles[0]);assert.equal(route.path[1].y,180);assert.equal(route.path[2].y,180);assert.ok(route.distance>0);const jobs=scheduleCharging(parkingFixture.vehicles,parkingFixture.modules),m=chargingMetrics(jobs);assert.equal(m.totalTravel,Math.round(jobs.reduce((s,j)=>s+j.travelMeters,0)));assert.ok(m.dailyThroughput>0);assert.equal(scheduleCharging(parkingFixture.vehicles,[])[0].status,'QUEUED');});
