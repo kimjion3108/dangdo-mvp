@@ -1,6 +1,7 @@
 
 import {estimateEta} from '../arrivalEngine.js';
 import {distance} from '../places.js';
+import {paceFactor} from '../personalization.js';
 export const defaultContext=()=>({trafficDelay:0,missedTrains:0,bikeRoute:'FAST',elapsed:0,boarded:false});
 export function transitRoute(context={},demo=false,base=25){
  const walk=3,buffer=1,arrivals=[2,...Array.from({length:200},(_,i)=>7+i*8)];
@@ -19,7 +20,8 @@ export function humanEta({origin,destination,mode='taxi',departureTime=Date.now(
  if(mode==='taxi'||mode==='car'){total+=context.trafficDelay||0;route.traffic=context.trafficDelay?'정체 시나리오':'교통 미반영';}
  if(mode==='transit'){route=transitRoute(context,demo,base);total=route.total;}
  if(mode==='bike'){const options=bikeRoutes(base,origin,destination,context);const selected=options.find(r=>r.type===(context.bikeRoute||'FAST'))||options[0];route={...context.bikeAnalysis,options,...selected};if(!selected)return {mode:'BIKE',transportMode:'bike',origin,destination,departureTime,etaMinutes:null,initialMinutes:null,estimatedArrivalTime:null,humanArrivalETA:null,route:{...route,status:context.bikeAnalysis?.status||'unavailable'},context};total=route.minutes;}
- if(mode==='walk')route={distanceKm:distance(origin,destination)*1.35/1000,speedKmh:4.5,source:'거리·보행 속도 기반 추정'};
+ if(mode==='walk'){total=Math.ceil(base*paceFactor(context.preferences));} total=Math.ceil(total);
+ if(mode==='walk')route={distanceKm:distance(origin,destination)*1.35/1000,speedKmh:4.5/paceFactor(context.preferences),source:'거리·보행 속도 기반 추정'};
  const arrival=departureTime+total*60000;
- return {isDemo:demo,mode:mode.toUpperCase(),transportMode:mode,origin,destination,departureTime,etaMinutes:Math.max(0,total-(context.elapsed||0)),initialMinutes:total,estimatedArrivalTime:arrival,humanArrivalETA:arrival,confidence:'추정',route,context,events:[],source:demo?'Demo mobility data':route.source};
+ return {isDemo:demo,mode:mode.toUpperCase(),transportMode:mode,origin,destination,departureTime,etaMinutes:Math.max(0,Math.ceil(total-(context.elapsed||0))),initialMinutes:total,estimatedArrivalTime:arrival,humanArrivalETA:arrival,confidence:'추정',route,context,events:[],source:demo?'Demo mobility data':route.source};
 }
