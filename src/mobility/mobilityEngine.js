@@ -15,11 +15,12 @@ export function bikeCost(route,profile){if(!(profile in BIKE_WEIGHTS))throw new 
 export function selectBikeRoute(candidates,profile){if(!candidates.length)throw new Error('No bike routes');return candidates.map(r=>({...r,cost:bikeCost(r,profile)})).sort((a,b)=>a.cost-b.cost||a.risk-b.risk||a.minutes-b.minutes||String(a.id).localeCompare(String(b.id)))[0];}
 export function bikeRoutes(base,origin,destination,context={}){return context.bikeAnalysis?.options||[];}
 export function humanEta({origin,destination,mode='taxi',departureTime=Date.now(),context=defaultContext(),demo=false}){
- const base=demo?({taxi:24,car:22,transit:28,bike:29,walk:55}[mode]):estimateEta(origin,destination,mode);
+ const base=demo?({taxi:24,car:22,transit:28,bike:29,walk:55,wheelchair:68}[mode]):estimateEta(origin,destination,mode);
  let total=base,route={source:'거리 기반 추정 · 실시간 교통 미반영'};
  if(mode==='taxi'||mode==='car'){total+=context.trafficDelay||0;route.traffic=context.trafficDelay?'정체 시나리오':'교통 미반영';}
  if(mode==='transit'){route=transitRoute(context,demo,base);total=route.total;}
  if(mode==='bike'){const options=bikeRoutes(base,origin,destination,context);const selected=options.find(r=>r.type===(context.bikeRoute||'FAST'))||options[0];route={...context.bikeAnalysis,options,...selected};if(!selected)return {mode:'BIKE',transportMode:'bike',origin,destination,departureTime,etaMinutes:null,initialMinutes:null,estimatedArrivalTime:null,humanArrivalETA:null,route:{...route,status:context.bikeAnalysis?.status||'unavailable'},context};total=route.minutes;}
+ if(mode==='wheelchair'){route=context.wheelchairAnalysis||{status:'estimate',source:'거리 기반 추정'};if(route.status==='loading'||route.status==='unavailable')return {mode:'WHEELCHAIR',transportMode:mode,origin,destination,departureTime,etaMinutes:null,initialMinutes:null,estimatedArrivalTime:null,humanArrivalETA:null,route,context};total=route.minutes||Math.ceil(base*paceFactor(context.preferences));route={...route,distanceKm:(route.distance||distance(origin,destination)*1.35)/1000,speedKmh:3.6/paceFactor(context.preferences)};}
  if(mode==='walk'){total=Math.ceil(base*paceFactor(context.preferences));} total=Math.ceil(total);
  if(mode==='walk')route={distanceKm:distance(origin,destination)*1.35/1000,speedKmh:4.5/paceFactor(context.preferences),source:'거리·보행 속도 기반 추정'};
  const arrival=departureTime+total*60000;
