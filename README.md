@@ -160,3 +160,11 @@ https://wiki.openstreetmap.org/wiki/Key:wheelchair
 
 ## 혜택과 사운드
 주변 실재 장소에 적용하는 상품/혜택 fixture는 장소 ID별로 고정된 5~15% 도착 할인과 캐시 적립 또는 사은품을 포함한다. 할인은 카드, 상세, 결제 및 주문 완료의 동일 견적에 반영한다. 검증된 가맹점 혜택 데이터가 있으면 해당 할인율과 시간대를 우선한다. 실제 금액은 청구하지 않는다. 사용자 제공 약 1.87초 음원을 시작하기, 목적지로 출발, 승차 위치 추천, 충전 진입, 주차/충전 신청에 재생한다. 브라우저가 재생을 차단해도 사용자 흐름은 계속된다.
+
+
+### Parking controls and resonant circuit model
+The steering control and forward/reverse buttons use a kinematic bicycle model. Whole rotated vehicle footprint must fit inside a charging zone; arbitrary parking uses bounded generated poses. The module moves along X/Y waypoints then rotates to the receiver yaw.
+An assumed 85 kHz resonant equivalent circuit computes M = k sqrt(L1 L2), Q = ωL/R and matched-load coil efficiency χ/(1+sqrt(1+χ))², χ=k²Q1Q2. Converter efficiency is assumed 0.96. Offset, gap, yaw and tilt affect assumed coupling. This is a conceptual model, not electromagnetic field simulation or validated equipment performance. Planar yaw differs from coil-normal tilt. Reference: https://www.ornl.gov/publication/field-enhancement-integration-design-featuring-misalignment-tolerance-wireless-ev
+
+### Bike fallback and T Bike profile
+When accident data is unavailable, stable seeded test polygons are generated around route maneuver points (or path bends if no maneuver details), sent to the existing exclusion routing adapter and included in route scoring. These are not verified accident sites or necessarily surveyed intersections. Source kind remains DEMO and appears in analysis information. Real routing geometry is retained; failure to generate a distinct avoidance path is reported rather than fabricated. The Kakao T Bike-use option is DANGDO's balanced time + 0.8 × risk recommendation, not a Kakao T API or fleet availability integration.
