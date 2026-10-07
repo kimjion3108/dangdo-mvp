@@ -1,3 +1,13 @@
+# DANGDO
+
+**DANGDO는 현실에서 움직이는 두 주체의 마지막 접점을 실시간으로 다시 정한다.**
+
+2026-10-07: 메인 데모를 Dynamic Pickup으로 확장했습니다. 택시의 승차 지점과 로봇의 전달 지점은 같은 접점 엔진으로 계산하고, 충전은 같은 원리로 모듈을 차량 위치에 보냅니다. 도착 상점 추천과 주문은 이 이동 과정의 목적지·ETA를 이어받습니다. 기존 GPS·검색·지도·이동수단·ORBIT·주문·공유는 유지했습니다.
+
+[새 흐름, 엔진, 데이터 출처, 공식 API 확인 및 검증](docs/dynamic-contact.md)
+
+아래는 기존 기능 기록입니다. 최신 메인 흐름과 데이터 범위는 위 문서를 우선합니다.
+
 # DANGDO · 당도
 
 **Destination × ETA × Merchant State → Recommendation → Purchase**
