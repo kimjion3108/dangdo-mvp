@@ -1,0 +1,16 @@
+name: Dynamic Pickup Benchmark
+on:
+  push:
+    branches: [dynamic-pickup-benchmark]
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run benchmark
+        run: node scripts/dynamic_pickup_benchmark.mjs
